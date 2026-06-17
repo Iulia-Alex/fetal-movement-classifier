@@ -13,7 +13,7 @@ import os, sys
 _src = os.path.dirname(os.path.abspath(__file__))
 
 # Top-level src/ subdirs
-for _sub in ('', 'extraction', 'adapters', 'domain_adaptation', 'shared'):
+for _sub in ('', 'extraction', 'latent_adapter', 'clf_finetuning', 'crosschannel_rf', 'shared'):
     _d = os.path.join(_src, _sub)
     if os.path.isdir(_d) and _d not in sys.path:
         sys.path.insert(0, _d)

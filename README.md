@@ -45,27 +45,27 @@ src/                              Python source — all modules flat (preserves 
 ├── # ── Downstream classifier (pre-existing, frozen) ────────────────────────
 ├── shared/pretrained_clf.py      AttUNet1D M14 (binary) / M15 (4-class) / M18; features_5
 │
-├── # ── Latent adapter (main) ───────────────────────────────────────────────
-├── latent_adapter.py             LatentAdapter class + train on DB_1 (multiclass, label-only)
-├── latent_adapter_binary.py      Train/eval adapter on binary task (M14)
-├── latent_adapter_multiclass.py  4-class eval (M15): recovers no-move + helix
-├── eval_adapter_binary_prauc.py  PR-AUC + best-F1 metrics helper
-├── eval_binary_adapter.py        Comparison table: base / adapter / GT ceiling
+├── latent_adapter/                Adapter family: frozen backbone + small learned correction
+│   ├── # ── main: bottleneck correction ─────────────────────────────────────
+│   ├── latent_adapter.py             LatentAdapter class + train on DB_1 (multiclass, label-only)
+│   ├── latent_adapter_binary.py      Train/eval adapter on binary task (M14)
+│   ├── latent_adapter_multiclass.py  4-class eval (M15): recovers no-move + helix
+│   ├── eval_adapter_binary_prauc.py  PR-AUC + best-F1 metrics helper
+│   ├── eval_binary_adapter.py        Comparison table: base / adapter / GT ceiling
+│   ├── # ── superseded: beat-level waveform correction ──────────────────────
+│   ├── build_adapter.py              Beat-level MLP Adapter class + POC evaluation
+│   └── train_adapter_db1.py          Train waveform adapter on DB_1 (not on test split)
 │
-├── # ── Waveform adapter (superseded) ────────────────────────────────────────
-├── build_adapter.py              Beat-level MLP Adapter class + POC evaluation
-├── train_adapter_db1.py          Train waveform adapter on DB_1 (not on test split)
+├── clf_finetuning/                Full re-training of the pre-trained classifier (non-adapter)
+│   ├── finetune_clf_extracted_binary.py  Re-train M14 end-to-end on extracted signals
+│   └── fuse_channels_binary.py           Channel-fusion head on top of the fine-tuned M14
 │
-├── # ── Fine-tuning (non-adapter) ───────────────────────────────────────────
-├── finetune_clf_extracted_binary.py  Re-train M14 end-to-end on extracted signals
-│
-├── # ── Cross-channel classifier (non-adapter) ──────────────────────────────
-├── probe_crosschannel_multiclass.py  Separability probes with oracle features
-├── dense_multiclass_crosschannel.py  Dense per-sample RF classifier, sliding window
-├── two_stage_dense.py            Two-stage: binary detection → 3-class type
-├── two_stage_dense_improved.py         Improved two-stage with calibration
-├── final_two_stage_eval.py       Final 5-fold CV evaluation
-├── fuse_channels_binary.py       Channel-fusion binary classifier
+├── crosschannel_rf/                Random-forest on hand-crafted cross-channel features (no pre-trained backbone)
+│   ├── probe_crosschannel_multiclass.py  Separability probes with oracle features
+│   ├── dense_multiclass_crosschannel.py  Dense per-sample RF classifier, sliding window
+│   ├── two_stage_dense.py                Two-stage: binary detection → 3-class type
+│   ├── two_stage_dense_improved.py       Improved two-stage with calibration
+│   └── final_two_stage_eval.py           Final 5-fold CV evaluation
 │
 └── # ── Shared utilities ─────────────────────────────────────────────────────
     ├── diag_info_ceiling.py      Load signals/masks, detect QRS peaks, amplitude ceiling
@@ -74,7 +74,7 @@ src/                              Python source — all modules flat (preserves 
 scripts/
 ├── extraction/
 │   └── run_training.sh           Generic SLURM/local launcher — pass version as argument
-└── adapters/
+└── latent_adapter/
     ├── run_latent_adapter_train.sh       Latent adapter — multiclass train
     ├── run_latent_adapter_binary.sh      Latent adapter — binary eval
     ├── run_latent_adapter_multiclass.sh  Latent adapter — 4-class eval
@@ -165,18 +165,18 @@ python smoke_pipeline.py               # quick sanity check
 
 ```bash
 # Train (multiclass, label-only, ~130 k params, CPU-friendly):
-bash scripts/adapters/run_latent_adapter_train.sh
+bash scripts/latent_adapter/run_latent_adapter_train.sh
 
 # Binary AP evaluation:
-bash scripts/adapters/run_latent_adapter_binary.sh v1
+bash scripts/latent_adapter/run_latent_adapter_binary.sh v1
 
 # 4-class evaluation:
-bash scripts/adapters/run_latent_adapter_multiclass.sh
+bash scripts/latent_adapter/run_latent_adapter_multiclass.sh
 ```
 
-Or directly from `src/`:
+Or directly from `src/latent_adapter/`:
 ```bash
-cd src
+cd src/latent_adapter
 python latent_adapter.py
 python latent_adapter_binary.py v1
 python eval_binary_adapter.py
@@ -185,14 +185,14 @@ python eval_binary_adapter.py
 ### Waveform adapter (superseded)
 
 ```bash
-bash scripts/adapters/run_waveform_adapter_train.sh
-# or: cd src && python train_adapter_db1.py
+bash scripts/latent_adapter/run_waveform_adapter_train.sh
+# or: cd src/latent_adapter && python train_adapter_db1.py
 ```
 
 ### Fine-tuning (non-adapter)
 
 ```bash
-cd src
+cd src/clf_finetuning
 python finetune_clf_extracted_binary.py          # probe mode
 python finetune_clf_extracted_binary.py train    # full run
 ```
@@ -200,7 +200,7 @@ python finetune_clf_extracted_binary.py train    # full run
 ### Cross-channel classifier (non-adapter)
 
 ```bash
-cd src
+cd src/crosschannel_rf
 python probe_crosschannel_multiclass.py   # oracle separability probes
 python dense_multiclass_crosschannel.py   # 5-fold CV on extracted signals
 python final_two_stage_eval.py            # two-stage dense pipeline

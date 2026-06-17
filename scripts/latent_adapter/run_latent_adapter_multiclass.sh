@@ -12,4 +12,4 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 # Evaluate latent adapter on 4-class task (M15, recovers no-move + helix)
-python -u src/adapters/latent_adapter_multiclass.py
+python -u src/latent_adapter/latent_adapter_multiclass.py
