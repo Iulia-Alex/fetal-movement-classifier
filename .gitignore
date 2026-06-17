@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Model checkpoints
+*.pt
+*.pth
+
+# Data / inference outputs
+*.npy
+*.mat
+*.h5
+*.hdf5
+
+# Logs & results (keep the directory skeleton, ignore content)
+logs/*
+!logs/.gitkeep
+*.log
+*.json
+
+# Documents & reports
+*.pdf
+*.xlsx
+*.xls
+
+# Plots & figures
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.eps
+*.tiff
+plots/
+plots_2026/
+
+# Markdown (except README)
+*.md
+!README.md
+
+# Text files (except requirements)
+*.txt
+!requirements.txt
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,20 @@
+# Core
+numpy>=2.0
+scipy>=1.14
+scikit-learn>=1.5
+
+# Deep learning (CUDA 12.1 build — adjust index URL for your environment)
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+torch>=2.4
+torchvision>=0.19
+torchaudio>=2.4
+
+# Signal processing
+librosa>=0.10
+colorednoise>=2.2
+
+# Utilities
+tqdm>=4.66
+pandas>=2.2
+matplotlib>=3.9
+seaborn>=0.13
