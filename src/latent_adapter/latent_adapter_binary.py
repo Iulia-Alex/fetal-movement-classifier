@@ -1,18 +1,18 @@
 """
-ADAPTER LATENT BINAR (miscare da/nu) — varianta directa pe taskul robust.
-Acelasi principiu ca latent_adapter.py (corectie la bottleneck, LABEL-ONLY, prin
-decoderul INGHETAT) dar pe clasificatorul BINAR M14 (out 1 canal, BCE), antrenat
-pe MAI MULTE date: 113 semnale (Final_Test_DB 122 minus cele 9 held-out), folosind
-extractiile v1 deja in cache (inferred_v1/) — fara re-inferenta.
+BINARY LATENT ADAPTER (movement yes/no) — the direct variant on the robust task.
+Same principle as latent_adapter.py (correction at the bottleneck, LABEL-ONLY, through
+the FROZEN decoder) but on the BINARY classifier M14 (1-channel out, BCE), trained on
+MORE data: 113 signals (Final_Test_DB 122 minus the 9 held-out), using the v1 extractions
+already cached (inferred_v1/) — no re-inference.
 
-Motivatie (vezi cap.4 §4.3): extractia injecteaza variatie spurioasa in intervalele
-still -> supra-detectie. Taskul binar esueaza exact din cauza asta, deci un adapter
-binar care suprima fals-pozitivele ataca fix ce s-a stricat. Headroom real: binF1
-base ~0.35-0.56, plafon ~0.65.
+Motivation (see ch.4 §4.3): the extraction injects spurious variation in the still
+intervals -> over-detection. The binary task fails precisely because of this, so a binary
+adapter that suppresses false positives attacks exactly what broke. Real headroom: binary-F1
+base ~0.35-0.56, ceiling ~0.65.
 
-Eval pe DOUA seturi disjuncte: held-out (9) + Test_DB Sem1..Sem11.
-Raporteaza F1 + PRECISION + RECALL (clasa miscare) ca sa verificam ca surplusul
-vine din precizie (mai putine fals-pozitive), NU din acuratete pe no-move.
+Eval on TWO disjoint sets: held-out (9) + Test_DB Sem1..Sem11.
+Reports F1 + PRECISION + RECALL (movement class) to check that the gain comes from
+precision (fewer false positives), NOT from accuracy on no-move.
 Probe: `python3 latent_adapter_binary.py probe`.
 """
 import sys, os, glob, time, json
@@ -50,8 +50,8 @@ def build_cache(names, net, n_windows, seed=0):
     B, S, Y = [], [[], [], [], []], []
     t0 = time.time()
     for fi, nm in enumerate(names):
-        ext = np.load(os.path.join(INFERRED, nm + '.npy'))        # v1 extras (cache)
-        mb = (load_mask('mc_masks', nm).astype(int) > 0).astype(np.int8)   # binar
+        ext = np.load(os.path.join(INFERRED, nm + '.npy'))        # v1 extracted (cache)
+        mb = (load_mask('mc_masks', nm).astype(int) > 0).astype(np.int8)   # binary
         N = min(ext.shape[1], len(mb)); max_start = N - WIN
         for ch in range(6):
             starts = rng.integers(0, max_start, size=per_ch)
@@ -205,7 +205,7 @@ def main():
         for k in ('gt', 'base', 'lat'):
             a, f, p, rc = np.mean([r[k] for r in sub], axis=0)
             print(f'  {label:<9} {k:<5} acc={a:.3f} F1={f:.3f} prec={p:.3f} rec={rc:.3f}', flush=True)
-    print(f'\nGata ({(time.time()-t)/60:.1f}min). json: {OUT}', flush=True)
+    print(f'\nDone ({(time.time()-t)/60:.1f}min). json: {OUT}', flush=True)
 
 
 if __name__ == '__main__':

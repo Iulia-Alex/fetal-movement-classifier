@@ -1,11 +1,11 @@
 """
-MovementECGDatasetV10 — extinde dataset-ul de baza cu fqrs peak mask.
+MovementECGDatasetV10 — extends the base dataset with the fqrs peak mask.
 
-Returnează (x, y, fecg_time, peak_mask) unde:
-  peak_mask : (WINDOW_SAMPLES,) float32 — 1.0 în jurul fiecare R-peak fetal,
-              0.0 în rest. Folosit pentru peak loss la pozițiile exacte fqrs.
+Returns (x, y, fecg_time, peak_mask) where:
+  peak_mask : (WINDOW_SAMPLES,) float32 — 1.0 around each fetal R-peak,
+              0.0 elsewhere. Used for peak loss at the exact fqrs positions.
 
-Peak mask: dilatare ±DILATION samples (30ms la 1kHz) în jurul fqrs.
+Peak mask: dilation ±DILATION samples (30ms at 1kHz) around fqrs.
 """
 
 import os
@@ -57,7 +57,7 @@ def _make_peak_mask(fqrs, start, window, dilation=DILATION):
 
 class MovementECGDatasetV10(MovementECGDataset):
     """
-    Ca MovementECGDataset dar returnează și fqrs peak mask.
+    Like MovementECGDataset but also returns the fqrs peak mask.
 
     Returns: (x, y, fecg_time, peak_mask)
       x         : (6, 128, 400) complex tensor — mixture spectrogram

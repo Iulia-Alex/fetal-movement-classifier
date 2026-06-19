@@ -1,18 +1,18 @@
 """
-ADAPTER LATENT (transfer in spatiul din mijlocul retelei) — directiva profei.
-In loc sa corectam semnalul DECODAT (build_adapter / train_adapter_db1), corectam
-reprezentarea LATENTA la bottleneck-ul clasificatorului M15 (AttUNet1D, multiclass).
+LATENT ADAPTER (transfer in the middle representation of the network).
+Instead of correcting the DECODED signal (build_adapter / train_adapter_db1), we correct
+the LATENT representation at the bottleneck of the M15 classifier (AttUNet1D, multiclass).
 
-  encoder(features(extras)) -> b_ext (256,240) + skip-uri s1..s4 (necorectate)
-  A(b_ext) -> b_corr            (MLP per-pozitie pe cele 256 canale, rezidual)
-  decoder INGHETAT (b_corr, s1..s4) -> logits 4 clase
+  encoder(features(extracted)) -> b_ext (256,240) + skips s1..s4 (uncorrected)
+  A(b_ext) -> b_corr            (per-position MLP over the 256 channels, residual)
+  FROZEN decoder (b_corr, s1..s4) -> 4-class logits
 
-Loss = CrossEntropy prin DECODER-UL INGHETAT vs masca de categorii (LABEL-ONLY:
-zero semnal GT, nici la antrenare). A invata ce bottleneck face decoderul sa
-clasifice corect DAT FIIND skip-urile extrase reale -> compenseaza scurgerea prin
-skip-uri (att-gates), in loc sa o ignore (ce ar face un MSE catre b_gt).
+Loss = CrossEntropy through the FROZEN DECODER vs the category mask (LABEL-ONLY:
+no GT signal at all, not even at training). It learns which bottleneck makes the decoder
+classify correctly GIVEN the real extracted skips -> compensates for the leakage through
+the skips (att-gates), instead of ignoring it (which an MSE toward b_gt would do).
 
-Antrenare pe DB_1 (baza de train, .mat cu category_mask); eval pe held-out din test.
+Trained on DB_1 (the train base, .mat with category_mask); eval on held-out from test.
 """
 import sys, os, glob, time, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -60,7 +60,7 @@ class LatentAdapter(nn.Module):
         self.net = nn.Sequential(
             nn.Conv1d(ch, hidden, 1), nn.GroupNorm(8, hidden), nn.ReLU(),
             nn.Conv1d(hidden, ch, 1))
-        nn.init.zeros_(self.net[-1].weight)        # start ca identitate (b_corr=b)
+        nn.init.zeros_(self.net[-1].weight)        # start as identity (b_corr=b)
         nn.init.zeros_(self.net[-1].bias)
 
     def forward(self, b):
@@ -167,7 +167,7 @@ def heldout_signals():
     for s in sigs:
         if s in v1done:
             by[snr_cat(s)].append(s)
-    return [by[c][i] for c in by for i in range(3)]   # 9, acelasi set ca decoded adapter
+    return [by[c][i] for c in by for i in range(3)]   # 9, same set as the decoded adapter
 
 
 def evaluate(net, A, model, eval_sigs, stride=3840):
@@ -211,17 +211,17 @@ def write_xlsx(rows):
     ws = wb.create_sheet(SH)
     bold = Font(bold=True); ital = Font(italic=True, size=9); ctr = Alignment(horizontal='center')
     thin = Side(style='thin', color='BBBBBB'); bd = Border(left=thin, right=thin, top=thin, bottom=thin)
-    L = [('ADAPTER LATENT (transfer la bottleneck-ul M15), antrenat pe DB_1, eval 9 held-out din test', bold),
-         ('A = MLP per-pozitie pe bottleneck (256ch); loss = CrossEntropy prin decoderul INGHETAT vs masca categorii.', ital),
-         ('LABEL-ONLY: nu se foloseste semnal GT nicaieri (nici la antrenare). Acc + macro-F1, 4 clase, medie pe 6 canale.', ital),
-         ('GT = plafon (M15 pe fECG curat); base = M15 pe extras (necorectat); lat = M15 cu adapter latent.', ital), ('', None)]
+    L = [('LATENT ADAPTER (transfer at the M15 bottleneck), trained on DB_1, eval on 9 held-out from test', bold),
+         ('A = per-position MLP on the bottleneck (256ch); loss = CrossEntropy through the FROZEN decoder vs the category mask.', ital),
+         ('LABEL-ONLY: no GT signal is used anywhere (not even at training). Acc + macro-F1, 4 classes, mean over 6 channels.', ital),
+         ('GT = ceiling (M15 on clean fECG); base = M15 on extracted (uncorrected); lat = M15 with latent adapter.', ital), ('', None)]
     r = 1
     for txt, f in L:
         cc = ws.cell(r, 1, txt)
         if f:
             cc.font = f
         r += 1
-    hdr = ['Semnal', 'Categorie', 'acc GT', 'acc base', 'acc latent', 'd acc',
+    hdr = ['Signal', 'Category', 'acc GT', 'acc base', 'acc latent', 'd acc',
            'mF1 GT', 'mF1 base', 'mF1 latent', 'd mF1']
     for j, h in enumerate(hdr):
         cc = ws.cell(r, 1 + j, h); cc.font = bold; cc.alignment = ctr
@@ -237,7 +237,7 @@ def write_xlsx(rows):
                 cc.alignment = ctr
         r += 1
     def m(k): return float(np.mean([x[k] for x in rows]))
-    mv = ['MEDIE', '', round(m('acc_gt'), 3), round(m('acc_base'), 3), round(m('acc_lat'), 3), round(m('acc_lat') - m('acc_base'), 3),
+    mv = ['MEAN', '', round(m('acc_gt'), 3), round(m('acc_base'), 3), round(m('acc_lat'), 3), round(m('acc_lat') - m('acc_base'), 3),
           round(m('f1_gt'), 3), round(m('f1_base'), 3), round(m('f1_lat'), 3), round(m('f1_lat') - m('f1_base'), 3)]
     for j, v in enumerate(mv):
         cc = ws.cell(r, 1 + j, v); cc.font = bold; cc.border = bd
@@ -247,7 +247,7 @@ def write_xlsx(rows):
     for col in 'BCDEFGHIJ':
         ws.column_dimensions[col].width = 12
     wb.save(XLSX)
-    print(f'\nfila "{SH}" scrisa in {XLSX}', flush=True)
+    print(f'\nsheet "{SH}" written to {XLSX}', flush=True)
 
 
 def main():
@@ -267,7 +267,7 @@ def main():
     cache = build_cache(train_mats, model, net, n_windows)
     # class weights (inv-freq, tempered) to counter no-move class dominance
     yflat = cache[2].ravel(); freq = np.bincount(yflat, minlength=N_CLASS) + 1
-    cw = (freq.sum() / freq); cw = (cw / cw.mean()) ** 0.5     # temperat
+    cw = (freq.sum() / freq); cw = (cw / cw.mean()) ** 0.5     # tempered
     print(f'  class freq {freq.tolist()}  -> weights {np.round(cw,2).tolist()}', flush=True)
 
     A = train(net, cache, epochs=epochs, class_weight=cw)

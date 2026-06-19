@@ -1,16 +1,16 @@
 """
 MovementECGDatasetV17 — paper-faithful (500 Hz, 128×128 natural) + attention target.
 
-Față de v15:
-  - Încarcă fqrs annotations (pozițiile R-peak-urilor fetale la 1000 Hz)
-  - Construiește o mască temporală binară la rezoluția T=128 (spectrograma):
-      1.0 în fereastra ±80ms (±3 T-frame-uri) în jurul fiecărui R-peak
-      0.0 în rest
-  - Returnează (mix_spec, fecg_spec, fecg_time, att_target_T128)
+Compared to v15:
+  - Loads fqrs annotations (the fetal R-peak positions at 1000 Hz)
+  - Builds a binary temporal mask at the T=128 resolution (spectrogram):
+      1.0 in the ±80ms window (±3 T-frames) around each R-peak
+      0.0 elsewhere
+  - Returns (mix_spec, fecg_spec, fecg_time, att_target_T128)
 
-att_target_T128 : (128,) float32 — mașca de atenție pentru AG1 la rezoluția completă.
-  În training, se face avg_pool 128→64 și broadcast la (1, 64, 64) pentru a
-  se potrivi cu forma alpha-ului AG1.
+att_target_T128 : (128,) float32 — the attention mask for AG1 at full resolution.
+  In training, an avg_pool 128→64 and broadcast to (1, 64, 64) is applied to
+  match the shape of AG1's alpha.
 """
 
 import os
@@ -53,16 +53,16 @@ def _load_fqrs_1000hz(mat_path):
 def _make_att_target(fqrs_1000, start_500, n_frames=N_FRAMES,
                      hop=HOP_LENGTH, dil=DIL_FRAMES):
     """
-    Construiește masca de atenție de formă (n_frames,) la rezoluția T a spectrogramei.
-    fqrs_1000 : pozițiile R-peak la 1000 Hz
-    start_500 : indexul de start al ferestrei la 500 Hz
+    Builds the attention mask of shape (n_frames,) at the spectrogram's T resolution.
+    fqrs_1000 : the R-peak positions at 1000 Hz
+    start_500 : the start index of the window at 500 Hz
     """
     mask = np.zeros(n_frames, dtype=np.float32)
-    fqrs_500 = fqrs_1000 // 2   # conversie 1000 Hz → 500 Hz
+    fqrs_500 = fqrs_1000 // 2   # conversion 1000 Hz → 500 Hz
     local = (fqrs_500[(fqrs_500 >= start_500) & (fqrs_500 < start_500 + WINDOW)]
              - start_500)
     for p in local:
-        t = int(round(p / hop))   # cel mai apropiat T-frame
+        t = int(round(p / hop))   # nearest T-frame
         lo = max(0, t - dil)
         hi = min(n_frames, t + dil + 1)
         mask[lo:hi] = 1.0
@@ -71,12 +71,12 @@ def _make_att_target(fqrs_1000, start_500, n_frames=N_FRAMES,
 
 class MovementECGDatasetV17(MovementECGDatasetPaper):
     """
-    Extinde v15 cu mașca de atenție pentru supervizarea AG1.
+    Extends v15 with the attention mask for AG1 supervision.
 
     Returns: (mix_spec, fecg_spec, fecg_time, att_target_T128)
       mix_spec, fecg_spec  : (6, 128, 128) complex tensors
       fecg_time            : (6, 1915) float32
-      att_target_T128      : (128,) float32  — mașca temporală pentru AG1
+      att_target_T128      : (128,) float32  — the temporal mask for AG1
     """
 
     def __init__(self, data_dir):

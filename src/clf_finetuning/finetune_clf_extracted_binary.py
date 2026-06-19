@@ -57,7 +57,7 @@ def build_cache(names, n_windows, seed=0):
 
 def train(cache, epochs=10, bs=32, lr=3e-4, pos_weight=3.0, init_ckpt=None):
     X, Y = cache; n = len(X)
-    if init_ckpt:                                # warm-start de la un checkpoint existent
+    if init_ckpt:                                # warm-start from an existing checkpoint
         net = E.AttUNet1D(5, 1, False)
         net.load_state_dict(torch.load(init_ckpt, map_location='cpu'))
         print(f'  resume from {os.path.basename(init_ckpt)} (lr={lr})', flush=True)

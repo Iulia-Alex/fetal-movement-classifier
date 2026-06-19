@@ -1,6 +1,6 @@
 # Fetal Movement Classifier
 
-Code for a master's thesis on fetal movement detection and classification from abdominal ECG (aECG).
+Code for the master's thesis project called 'Methods for Automatic Analysis of the Fetal Electrocardiogram Based on Deep Learning for Assessing Fetal Health Status'.
 
 The project is a **two-stage pipeline**:
 1. **fECG extraction** — complex-valued U-Net family (v1–v17) that separates the fetal ECG from a 6-channel abdominal mixture
@@ -17,59 +17,55 @@ The downstream classifier (1-D Attention U-Net, M14/M15/M18) is a **pre-existing
 ## Repository layout
 
 ```
-src/                              Python source — all modules flat (preserves sys.path imports)
+src/                              Python source (entry scripts add src/ to sys.path via pathsetup.py)
+├── config.py                     Cluster paths, overridable via FECG_ROOT / FECG_DATA_ROOT
+├── pathsetup.py                  Registers every src/ subfolder on sys.path (flat import names)
 │
-├── # ── fECG Extraction ─────────────────────────────────────────────────────
-├── complex_network.py            v1  Baseline (0.59 M, soft mask, 128×400)
-├── complex_network_v7.py         v7/v8  direct prediction, L1/L2 experiments
-├── complex_network_v9.py         v9  gain mask + ComplexMSE study
-├── complex_network_v10-v13.py    v10–v13  peak-weighted / instance-norm variants
-├── complex_network_v15.py        v15  Robust, 128×128, 500 Hz
-├── complex_network_v16.py        v16 Attention-gated / v17 Attention-supervised
+├── extraction/                   fECG extraction — complex-valued U-Net family
+│   ├── pipeline_registry.py      version tag → architecture + checkpoint path + infer fn
+│   ├── infer_testdb.py           Batch inference on Test-DB for any registered version
+│   ├── extract_save_npy.py       Cache extracted signals to .npy for downstream tasks
+│   ├── eval_qrs_f1{,_v2,_v3}.py  QRS-peak F1 on Test-DB (3 iterations; v3 = final, 500 Hz)
+│   ├── smoke_pipeline.py         Quick sanity check: load → infer → F1 on one file
+│   └── v01_baseline/ … v18_attention_500hz/
+│                                 per-experiment folders, each with complex_network_vN.py,
+│                                 movement_dataset_vN.py and train_movement_vN.py
+│                                 (v01, v05_v06, v07_v08, v09, v10_v11, v12_v13, v14, v15, v16_v17, v18)
 │
-├── movement_dataset.py           128×400 pipeline dataset (v1–v13, v18)
-├── movement_dataset_v15.py       128×128 pipeline dataset (v15–v17)
-├── movement_dataset_v10/12/14/   intermediate dataset variants (imported by train scripts)
-├── movement_dataset_v17/v18.py   dataset variants for v17/v18 training
+├── shared/                       shared utilities
+│   ├── pretrained_clf.py         AttUNet1D M14 (binary) / M15 (4-class) / M18 — pre-existing, frozen; + features
+│   ├── diag_info_ceiling.py      Load signals/masks, detect QRS peaks, amplitude-correlation ceiling
+│   └── pipeline_clf.py           Pipeline helpers for classifier evaluation
 │
-├── pipeline_registry.py          Maps version tag → architecture + checkpoint path + infer fn
-├── train_movement.py             v1 training entry point
-├── train_movement_v5-v18.py      v5–v18 training entry points
-├── train_movement_v1_resume*.py  resume checkpoints for v1
-│
-├── infer_testdb.py               Batch inference on Test-DB for any registered version
-├── extract_save_npy.py           Save extracted signals to .npy cache for downstream tasks
-├── eval_qrs_f1*.py               QRS-peak F1 evaluation on Test-DB (v1/v2/v3 = 3 iterations)
-├── smoke_pipeline.py             Quick sanity-check: load → infer → F1 on one file
-│
-├── # ── Downstream classifier (pre-existing, frozen) ────────────────────────
-├── shared/pretrained_clf.py      AttUNet1D M14 (binary) / M15 (4-class) / M18; features_5
-│
-├── latent_adapter/                Adapter family: frozen backbone + small learned correction
-│   ├── # ── main: bottleneck correction ─────────────────────────────────────
-│   ├── latent_adapter.py             LatentAdapter class + train on DB_1 (multiclass, label-only)
-│   ├── latent_adapter_binary.py      Train/eval adapter on binary task (M14)
-│   ├── latent_adapter_multiclass.py  4-class eval (M15): recovers no-move + helix
+├── latent_adapter/               adapter family: frozen backbone + small learned correction
+│   ├── latent_adapter.py             LatentAdapter class + multiclass train on DB_1 (label-only)
+│   ├── latent_adapter_binary.py      Binary adapter (M14), trained/eval on extracted (113 signals)
+│   ├── latent_adapter_multiclass.py  4-class adapter (M15): recovers no-move + helix
 │   ├── eval_adapter_binary_prauc.py  PR-AUC + best-F1 metrics helper
 │   ├── eval_binary_adapter.py        Comparison table: base / adapter / GT ceiling
-│   ├── # ── superseded: beat-level waveform correction ──────────────────────
-│   ├── build_adapter.py              Beat-level MLP Adapter class + POC evaluation
-│   └── train_adapter_db1.py          Train waveform adapter on DB_1 (not on test split)
+│   ├── build_adapter.py              (superseded) beat-level MLP adapter + POC evaluation
+│   └── train_adapter_db1.py          (superseded) train waveform adapter on DB_1
 │
-├── clf_finetuning/                Full re-training of the pre-trained classifier (non-adapter)
+├── clf_finetuning/               full re-training of the pre-trained classifier (non-adapter)
 │   ├── finetune_clf_extracted_binary.py  Re-train M14 end-to-end on extracted signals
 │   └── fuse_channels_binary.py           Channel-fusion head on top of the fine-tuned M14
 │
-├── crosschannel_rf/                Random-forest on hand-crafted cross-channel features (no pre-trained backbone)
-│   ├── probe_crosschannel_multiclass.py  Separability probes with oracle features
-│   ├── dense_multiclass_crosschannel.py  Dense per-sample RF classifier, sliding window
-│   ├── two_stage_dense.py                Two-stage: binary detection → 3-class type
-│   ├── two_stage_dense_improved.py       Improved two-stage with calibration
+├── crosschannel_rf/              random forest on hand-crafted cross-channel features
+│   ├── probe_crosschannel_multiclass.py  Separability probes + cross-channel feature definitions
+│   ├── dense_multiclass_crosschannel.py  Dense per-sample RF, sliding window
+│   ├── two_stage_dense.py                Two-stage: binary detection → type
+│   ├── two_stage_dense_improved.py       Two-stage with a shorter detection window + threshold calibration
+│   ├── two_stage_improved.py             Two-stage + spatial-coherence features + balanced threshold
+│   ├── two_stage_3class.py               3-class variant {no-move, directed (linear+spline), helix}
 │   └── final_two_stage_eval.py           Final 5-fold CV evaluation
 │
-└── # ── Shared utilities ─────────────────────────────────────────────────────
-    ├── diag_info_ceiling.py      Load signals/masks, detect QRS peaks, amplitude ceiling
-    └── pipeline_clf.py           Pipeline helpers for clf evaluation
+└── eval/                         diagnostics & statistics (examiner-driven analyses)
+    ├── correction_stats.py             Bootstrap CI + paired Wilcoxon on the binary correction gains
+    ├── control_perlead_4class.py       Per-lead 4-class control (domain-matched)
+    ├── control_perchannel_4class.py    Representation decomposition control (spectral / geom / full)
+    ├── disentangle_amp_corr.py         Table 4.8 disambiguation (detected vs reference peaks)
+    ├── diag_compare_models.py          Shape-preservation comparison across extraction models
+    └── probe_separability.py           Window-level separability probe (linear/spline strategy)
 
 scripts/
 ├── extraction/
@@ -137,7 +133,7 @@ Tested with Python 3.10, PyTorch 2.4.1, CUDA 12.1.
 
 ## How to run
 
-All scripts add their own directory to `sys.path`, so run either from inside `src/` or as `python src/<script>.py` from the repo root.
+All scripts add the `src/` root to `sys.path` and import `pathsetup`, which registers every subfolder, so the flat import names resolve from any subfolder. Run a script from inside its subfolder, or as `python src/<area>/<script>.py` from the repo root.
 
 ### fECG extraction — train
 
@@ -154,7 +150,7 @@ Supported version tags: `v1`, `v5`–`v18`, `v1_resume`.
 ### fECG extraction — evaluate
 
 ```bash
-cd src
+cd src/extraction
 python extract_save_npy.py v1          # cache extracted signals
 python eval_qrs_f1_v3.py              # QRS F1 on Test-DB (500 Hz corrected)
 python infer_testdb.py                 # batch inference for all registered versions
@@ -203,7 +199,21 @@ python finetune_clf_extracted_binary.py train    # full run
 cd src/crosschannel_rf
 python probe_crosschannel_multiclass.py   # oracle separability probes
 python dense_multiclass_crosschannel.py   # 5-fold CV on extracted signals
-python final_two_stage_eval.py            # two-stage dense pipeline
+python two_stage_improved.py              # two-stage + spatial-coherence features
+python two_stage_3class.py                # 3-class variant (no-move / directed / helix)
+python final_two_stage_eval.py            # final two-stage 5-fold evaluation
+```
+
+### Diagnostics & statistics
+
+```bash
+cd src/eval
+python correction_stats.py            # bootstrap CI + Wilcoxon on the correction gains
+python control_perlead_4class.py      # per-lead 4-class control
+python control_perchannel_4class.py   # representation decomposition control
+python disentangle_amp_corr.py        # Table 4.8 disambiguation
+python diag_compare_models.py         # shape preservation across extraction models
+python probe_separability.py          # window-level separability probe
 ```
 
 ---

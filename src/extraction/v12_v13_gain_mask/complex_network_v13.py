@@ -1,14 +1,14 @@
 """
-ComplexUNet v13 — v9 + instance normalization în forward.
+ComplexUNet v13 — v9 + instance normalization in forward.
 
-Diferența față de v9:
-  - Înainte de procesare, inputul este normalizat per (B, C) cu scale = sqrt(mean(|x|^2))
-  - Rețeaua internă vede inputuri la scală consistentă → generalizare mai bună
-  - Masca este aplicată pe inputul ORIGINAL (nu normalizat) → output la scală corectă
-  - Echivalent cu paper-ul (arxiv:2506.22457) care face mask * x_norm + denorm
+Difference from v9:
+  - Before processing, the input is normalized per (B, C) with scale = sqrt(mean(|x|^2))
+  - The internal network sees inputs at a consistent scale → better generalization
+  - The mask is applied to the ORIGINAL input (not normalized) → output at the correct scale
+  - Equivalent to the paper (arxiv:2506.22457) which does mask * x_norm + denorm
 
-Aceasta explică de ce paper-ul produce predicții 1:1 cu GT pe date in-vivo:
-  instance norm face rețeaua invariantă la scała absolută a semnalului.
+This explains why the paper produces 1:1 predictions with GT on in-vivo data:
+  instance norm makes the network invariant to the absolute scale of the signal.
 """
 
 import torch

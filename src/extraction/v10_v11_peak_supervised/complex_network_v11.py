@@ -1,14 +1,14 @@
 """
-ComplexUNet v11 — v9 architecture (1.87M) + direct prediction (fara masca).
+ComplexUNet v11 — v9 architecture (1.87M) + direct prediction (no mask).
 
-Diferenta fata de v9:
-  - forward() returneaza x direct dupa diag_out, fara sigmoid mask
-  - Nu e constrans la [0,1] per bin — poate prezice amplitudini corecte
-  - Antrenat cu SignalMSE + PeakMSE(fqrs), fara ComplexMSE
+Difference from v9:
+  - forward() returns x directly after diag_out, without a sigmoid mask
+  - Not constrained to [0,1] per bin — can predict correct amplitudes
+  - Trained with SignalMSE + PeakMSE(fqrs), without ComplexMSE
 
-Motivatie: v9 cu ComplexMSE suprimatamplitudinile (ComplexMSE ~10x > SignalMSE
-in loss → modelul optimizeaza mai mult structura spectrala decat amplitudinile).
-v11 = arhitectura puternica (1.87M) + obiectiv direct pe amplitudini.
+Motivation: v9 with ComplexMSE suppressed the amplitudes (ComplexMSE ~10x > SignalMSE
+in the loss → the model optimizes the spectral structure more than the amplitudes).
+v11 = strong architecture (1.87M) + a direct objective on the amplitudes.
 """
 
 import torch
@@ -24,8 +24,8 @@ from complex_network_v9 import (
 
 class ComplexUNetV11(nn.Module):
     """
-    Identic cu ComplexUNetV9 dar forward() returneaza predictie directa
-    (fara soft mask). Acelasi numar de parametri: ~1.87M.
+    Identical to ComplexUNetV9 but forward() returns a direct prediction
+    (no soft mask). Same number of parameters: ~1.87M.
     """
     def __init__(self, dimension, in_channels=6):
         super().__init__()

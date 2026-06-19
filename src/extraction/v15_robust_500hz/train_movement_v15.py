@@ -1,19 +1,19 @@
 """
-Training script v15 — arhitectura exactă din paper (arxiv:2506.22457).
+Training script v15 — the exact architecture from the paper (arxiv:2506.22457).
 
-Față de v2 (arhivă):
+Compared to v2 (archive):
   - MAX_EPOCHS 100 → 300
   - PATIENCE 15 → 20
-  - BS 32 → 8 (stabilitate pe GPU nou, arhitectura 7M params)
-  - AdamW cu weight_decay=1e-5 (în loc de Adam pur)
+  - BS 32 → 8 (stability on the new GPU, 7M-param architecture)
+  - AdamW with weight_decay=1e-5 (instead of plain Adam)
   - ReduceLROnPlateau scheduler (factor=0.5, patience=8)
   - Resume din checkpoint
   - Redirect stdout → log
 
 Arhitectura (complex_network_v15.py = complex_network_paper.py):
-  - ComplexConvLayer cu cross-mixing: (r-i) + j*(r+i)
-  - Diag cu scale exp(beta) independent pe real/imag
-  - Normalize mean+std în forward, denormalize după mască
+  - ComplexConvLayer with cross-mixing: (r-i) + j*(r+i)
+  - Diag with scale exp(beta) independent on real/imag
+  - Normalize mean+std in forward, denormalize after the mask
   - Head: 32→16→6
   - 6→32→64→128→256, bottleneck 512
   - ~7.13M params
@@ -172,7 +172,7 @@ def main():
     model  = ComplexUNetV15(DIMENSION, in_channels=IN_CHANNELS).to(device)
     params = sum(p.numel() for p in model.parameters())
     print(f'Parameters: {params / 1e6:.2f} M')
-    print(f'Arhitectura: paper fidel — cross-mixing, normalize mean+std, head 32→16→6')
+    print(f'Architecture: paper-faithful — cross-mixing, normalize mean+std, head 32→16→6')
 
     optimizer  = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     scheduler  = optim.lr_scheduler.ReduceLROnPlateau(

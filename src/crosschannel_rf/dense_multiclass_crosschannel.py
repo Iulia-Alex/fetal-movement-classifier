@@ -1,19 +1,19 @@
 """
-DELIVERABLE: clasificare DENSA per-sample a tipului de miscare (0..3) pe fECG EXTRAS,
-FARA granite de faza si FARA re-antrenarea extractiei.
+DELIVERABLE: DENSE per-sample classification of the movement type (0..3) on EXTRACTED
+fECG, WITHOUT phase boundaries and WITHOUT re-training the extraction.
 
-Diferente fata de probe (probe_crosschannel_multiclass.py, care folosea granite oracle):
-  - ferestre GLISANTE de lungime fixa (W=16s, pas 2s) — nicio informatie despre
-    lungimea/granitele miscarilor (cum cere un scenariu real);
-  - R-peaks detectati pe semnalul EXTRAS (nu pe GT) — pipeline realist;
-  - predictie per-sample prin overlap-add al probabilitatilor + netezire temporala.
+Differences from the probe (probe_crosschannel_multiclass.py, which used oracle boundaries):
+  - SLIDING windows of fixed length (W=16s, step 2s) — no information about the
+    length/boundaries of the movements (as a real scenario requires);
+  - R-peaks detected on the EXTRACTED signal (not on GT) — realistic pipeline;
+  - per-sample prediction via overlap-add of the probabilities + temporal smoothing.
 
-Reprezentare = features CROSS-CANAL (spectral per-canal + geometrie 6D a traiectoriei
-de amplitudini), pe care probe-ul a aratat-o robusta la extractie (vs per-canal M15).
-Clasificator RF re-antrenat pe EXTRAS (adaptare de domeniu, label-only).
+Representation = CROSS-CHANNEL features (per-channel spectral + 6D geometry of the
+amplitude trajectory), which the probe showed to be robust to extraction (vs per-channel M15).
+RF classifier re-trained on EXTRACTED (domain adaptation, label-only).
 
-Eval: 5-fold file-level CV. Raporteaza per-sample macro-F1 + F1 per-clasa + confusion,
-fata de plafonul DENS pe GT (acelasi pipeline, dar amplitudini din GT).
+Eval: 5-fold file-level CV. Reports per-sample macro-F1 + per-class F1 + confusion,
+against the DENSE ceiling on GT (same pipeline, but amplitudes from GT).
 """
 import os, sys, time, json
 import numpy as np
@@ -68,10 +68,10 @@ def feats_for_window(amps):
 
 def build_windows(names, source='ext'):
     """
-    Pentru fiecare fereastra glisanta: features + label majoritar + (fid, centru).
-    Peaks detectati pe EXTRAS (pipeline realist). 'source' = de unde citim amplitudinile
-    (ext = deliverable; gt = plafon dens, acelasi peaks/ferestre).
-    Returneaza si, per fisier, lungimea N si peaks (pt reconstructia densa).
+    For each sliding window: features + majority label + (fid, center).
+    Peaks detected on EXTRACTED (realistic pipeline). 'source' = where the amplitudes
+    are read from (ext = deliverable; gt = dense ceiling, same peaks/windows).
+    Also returns, per file, the length N and peaks (for the dense reconstruction).
     """
     X, Y, FID, CENTER = [], [], [], []
     meta = {}   # fid -> (name, N, peaks)
@@ -105,8 +105,8 @@ def build_windows(names, source='ext'):
 
 def dense_predict(rf, X, FID, CENTER, meta, test_fids):
     """
-    Per-sample: acumuleaza probabilitatile ferestrelor (overlap-add pe intervalul
-    fiecarei ferestre) -> argmax -> netezire mediana. Returneaza dict fid -> (pred, mc).
+    Per-sample: accumulate the window probabilities (overlap-add over each window's
+    interval) -> argmax -> median smoothing. Returns dict fid -> (pred, mc).
     """
     out = {}
     for fid in test_fids:
@@ -121,8 +121,8 @@ def dense_predict(rf, X, FID, CENTER, meta, test_fids):
                 acc[:, s:e] += proba[j][:, None]
                 cov[s:e] += 1.0
         pred = acc.argmax(0)
-        pred[cov == 0] = 0       # zone neacoperite (margini) -> no-move
-        pred = median_filter(pred, size=FS).astype(int)  # netezire 1s
+        pred[cov == 0] = 0       # uncovered zones (edges) -> no-move
+        pred = median_filter(pred, size=FS).astype(int)  # 1s smoothing
         out[fid] = (pred, load_mc(name)[:N])
     return out
 
@@ -147,7 +147,7 @@ def run(X, Y, FID, CENTER, meta, tag=''):
             all_pred.append(p); all_true.append(t)
         print(f'  fold {k+1}/5 done', flush=True)
     yp = np.concatenate(all_pred); yt = np.concatenate(all_true)
-    # window-level (pt referinta)
+    # window-level (for reference)
     wf1 = f1_score(win_true, win_pred, labels=[0,1,2,3], average=None, zero_division=0)
     wmac = f1_score(win_true, win_pred, labels=[0,1,2,3], average='macro', zero_division=0)
     # per-sample (DELIVERABLE)

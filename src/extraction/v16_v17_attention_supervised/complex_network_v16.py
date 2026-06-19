@@ -1,22 +1,22 @@
 """
 ComplexAttentionUNet (v16) — paper backbone (v15) + Attention Gates pe skip connections.
 
-Inspiratie arhitecturala:
-  - Backbone: paper-ul nostru (v15): cross-mixing ComplexConvLayer, exp(β) Diag,
+Architectural inspiration:
+  - Backbone: our paper (v15): cross-mixing ComplexConvLayer, exp(β) Diag,
     RoActivation, sigmoid mask output, per-sample normalize/denormalize.
   - Attention Gates: Schlemper et al. 2019 "Attention U-Net: Learning Where to Look
     for the Pancreas" (https://github.com/ozan-oktay/Attention-Gated-Networks).
-    Adaptare pentru complex-valued features: α calculat pe magnitudini (|x|),
-    aplicat pe semnalul complex: attended_x = α ⊙ x.
+    Adapted for complex-valued features: α computed on the magnitudes (|x|),
+    applied to the complex signal: attended_x = α ⊙ x.
 
-Diferente fata de v15:
-  - Skip connections sunt filtrate printr-un Attention Gate inainte de concatenare.
-  - AG suprima skip features irelevante folosind semnalul decoder (gating) ca referinta.
-  - Atentie bazata pe magnitudini — motivatie: magnitudinea captura "cat de mult"
-    este prezenta o trasatura, atentia decide daca e relevanta (nu polarity/faza).
-  - ~200K parametri aditionali (AG3+AG2+AG1) fata de v15 (~7.13M → ~7.33M total).
+Differences from v15:
+  - Skip connections are filtered through an Attention Gate before concatenation.
+  - The AG suppresses irrelevant skip features using the decoder signal (gating) as reference.
+  - Magnitude-based attention — rationale: the magnitude captures "how much" of
+    a feature is present, the attention decides whether it is relevant (not polarity/phase).
+  - ~200K additional parameters (AG3+AG2+AG1) vs v15 (~7.13M → ~7.33M total).
 
-Arhitectura:
+Architecture:
   Input (B,6,128,128) complex
     │
     ├─ normalize + diag_in
@@ -242,10 +242,10 @@ class WeightClipper:
 # ---------------------------------------------------------------------------
 class ComplexAttentionUNet(nn.Module):
     """
-    Paper-faithful ComplexUNet (v15 backbone) cu Attention Gates
-    pe toate cele 3 skip connections.
+    Paper-faithful ComplexUNet (v15 backbone) with Attention Gates
+    on all 3 skip connections.
 
-    Parameters ~ 7.33M (v15: 7.13M + ~200K pt. 3 AG-uri).
+    Parameters ~ 7.33M (v15: 7.13M + ~200K for 3 AGs).
     """
     def __init__(self, dimension: int, in_channels: int = 6):
         super().__init__()

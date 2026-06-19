@@ -1,14 +1,14 @@
 """
 ComplexUNet v12 — v9 architecture + gain mask (1.5 × sigmoid).
 
-Diferenta fata de v9:
-  - mask = 1.5 * sigmoid(logits)  ∈ [0, 1.5]  (nu [0, 1])
-  - Permite recuperarea energiei la bin-urile cu interferenta destructiva
-    (unde fECG/mixture_spec > 1 — sigmoid pur nu poate ajunge acolo)
+Difference from v9:
+  - mask = 1.5 * sigmoid(logits)  ∈ [0, 1.5]  (not [0, 1])
+  - Allows energy recovery at bins with destructive interference
+    (where fECG/mixture_spec > 1 — a pure sigmoid cannot reach there)
 
 Loss (in train_movement_v12.py):
   - SignalMSE + ALPHA * QRSwideMSE (fqrs ±100 samples)
-  - Fara ComplexMSE (cauza principala de suprimare amplitudini in v9)
+  - No ComplexMSE (the main cause of amplitude suppression in v9)
 """
 
 import torch

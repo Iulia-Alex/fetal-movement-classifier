@@ -1,12 +1,12 @@
 """
 Training script v16 — ComplexAttentionUNet (v15 backbone + Attention Gates).
 
-Față de v15:
+Compared to v15:
   - Model: ComplexAttentionUNet (complex_network_v16.py)
-    → 3 Attention Gates pe skip connections (res1, res2, res3)
-    → α calculat pe magnitudini |skip|, |gate| — faza păstrată intactă
-    → ~7.22M params (v15: 7.13M + ~90K AG-uri)
-  - Restul identic cu v15: SignalMSE, AdamW, ReduceLROnPlateau, PATIENCE=20
+    → 3 Attention Gates on skip connections (res1, res2, res3)
+    → α computed on the magnitudes |skip|, |gate| — phase kept intact
+    → ~7.22M params (v15: 7.13M + ~90K AGs)
+  - The rest identical to v15: SignalMSE, AdamW, ReduceLROnPlateau, PATIENCE=20
 
 Dataset: movement_dataset_v15.py (500Hz, STFT 128×128 nativ)
 """

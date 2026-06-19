@@ -130,7 +130,7 @@ def geom_feats(amps, smooth=5):
 
     p1, p2 = scores[:, 0], scores[:, 1]
 
-    # tortuosity: path length / end-to-end distance (linear~1, spline>1, helix>>1)
+    # winding ratio: path length / end-to-end distance (linear~1, spline>1, helix>>1)
     seg = np.sqrt(np.sum(np.diff(scores, axis=0) ** 2, axis=1))
     path_len = seg.sum()
     endto = np.sqrt(np.sum((scores[-1] - scores[0]) ** 2)) + 1e-9
@@ -170,7 +170,7 @@ def geom_feats(amps, smooth=5):
     return feats
 
 
-GEOM_NAMES = ['pca_r1', 'pca_r2', 'pca_r3', 'partic_ratio', 'tortuosity',
+GEOM_NAMES = ['pca_r1', 'pca_r2', 'pca_r3', 'partic_ratio', 'winding_ratio',
               'net_turn', 'abs_turn', 'n_rot', 'curvature', 'pc_spec_peak']
 
 

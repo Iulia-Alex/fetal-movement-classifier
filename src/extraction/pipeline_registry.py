@@ -1,18 +1,18 @@
 """
-Registry de modele de EXTRACTIE (v1..v18, fara v14) pentru pipeline-ul
-extractie -> clasificare miscare (clasificatoarele lui Edward 14/15/18).
+EXTRACTION model registry (v1..v18, without v14) for the extraction -> movement
+classification pipeline (Edward's classifiers 14/15/18).
 
-Maparea checkpoint -> arhitectura -> pipeline de inferenta:
-  - .res = '400'  : pipeline nativ 128x400 (movement_dataset, infer_128x400),
-                    fara decimare. Folosit de v1..v13 si v18.
-  - .res = '128'  : pipeline decimat 128x128 (movement_dataset_v15, infer_128x128).
-                    Folosit de v15/v16/v17.
-Mastile (soft/gain) sunt aplicate IN forward() pentru modelele care le folosesc,
-deci model(x) intoarce direct estimarea spectrograma -> istft.
+Checkpoint -> architecture -> inference-pipeline mapping:
+  - .res = '400'  : native 128x400 pipeline (movement_dataset, infer_128x400),
+                    no decimation. Used by v1..v13 and v18.
+  - .res = '128'  : decimated 128x128 pipeline (movement_dataset_v15, infer_128x128).
+                    Used by v15/v16/v17.
+The masks (soft/gain) are applied INSIDE forward() for the models that use them,
+so model(x) returns the spectrogram estimate directly -> istft.
 
-v2/v3/v4: scripturile de training (archive/) au disparut; maparea checkpoint
-e DEDUSA (dimensiune fisier + EXPERIMENTS.md) si NEVERIFICATA. Poarta de
-validare e F1 R-peak vs GT din smoke_pipeline.py.
+v2/v3/v4: the training scripts (archive/) are gone; the checkpoint mapping is
+INFERRED (file size + EXPERIMENTS.md) and UNVERIFIED. The validation gate is
+the R-peak F1 vs GT from smoke_pipeline.py.
 """
 import os
 import numpy as np
@@ -82,7 +82,7 @@ def load_extractor(vname, device='cpu'):
     path = os.path.join(MODELS_DIR, ckpt)
     m = arch(dim, in_channels=cin)
     state = torch.load(path, map_location=device)
-    m.load_state_dict(state)        # strict=True implicit -> prinde mismatch arhitectura
+    m.load_state_dict(state)        # strict=True by default -> catches architecture mismatch
     return m.to(device).eval()
 
 

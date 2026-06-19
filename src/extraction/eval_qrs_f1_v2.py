@@ -1,11 +1,11 @@
 """
-Calcul F1 score QRS — versiunea 2 cu prag LOCAL (fereastra 5s).
+QRS F1 score — version 2 with a LOCAL threshold (5s window).
 
-Diferenta fata de v1:
-  - Pragul de detectie se calculeaza pe ferestre de WIN_THRESH_S secunde
-    (nu global pe intregul semnal de 600s).
-  - Evita problema: cateva ferestre cu amplitudine mare => prag global >> amplitudine normala
-    => peaks ratate in tot restul semnalului.
+Difference from v1:
+  - The detection threshold is computed over windows of WIN_THRESH_S seconds
+    (not globally over the whole 600s signal).
+  - Avoids the problem: a few high-amplitude windows => global threshold >> normal amplitude
+    => peaks missed throughout the rest of the signal.
 """
 
 import sys, os, json, re, time
@@ -169,7 +169,7 @@ def detect_peaks_local(sig, fs=FS1k):
     local_std[:half] = local_std[half]
     local_std[-half:] = local_std[-half - 1]
 
-    thresh_arr = 0.3 * local_std  # array de praguri per sample
+    thresh_arr = 0.3 * local_std  # per-sample threshold array
 
     # detect positive and negative peaks using median threshold
     thresh_median = float(np.median(thresh_arr))

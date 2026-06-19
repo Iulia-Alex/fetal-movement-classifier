@@ -3,12 +3,12 @@ Training script v10 — ComplexUNetV10 (v1 arch, soft mask) + fqrs peak loss.
 
 Loss = SignalMSE + ComplexMSE + ALPHA * PeakMSE
 
-PeakMSE: MSE calculat DOAR la pozitiile R-peak fetale (fqrs ±30ms).
-Motivatie: SignalMSE trateaza egal toate esanttioanele, dar peaks sunt ~8% din
-semnal. PeakMSE forteaza modelul sa se concentreze pe amplitudinile R-peak.
+PeakMSE: MSE computed ONLY at the fetal R-peak positions (fqrs ±30ms).
+Motivation: SignalMSE treats all samples equally, but peaks are ~8% of the
+signal. PeakMSE forces the model to focus on the R-peak amplitudes.
 
-Cu soft mask (output = sigmoid × input), modelul nu poate colabsa la 0 pentru
-a minimiza ComplexMSE — deci combinatia functioneaza (spre deosebire de v3).
+With a soft mask (output = sigmoid × input), the model cannot collapse to 0 to
+minimize ComplexMSE — so the combination works (unlike v3).
 """
 
 import os, sys, json, time, datetime
@@ -93,7 +93,7 @@ def peak_mse(pred_time, fecg_time, peak_mask):
     pred_time: (B, C, T) float32
     """
     mask = peak_mask.unsqueeze(1)                          # (B, 1, T)
-    n    = mask.sum() * pred_time.shape[1] + 1e-8          # numar esantioane active
+    n    = mask.sum() * pred_time.shape[1] + 1e-8          # number of active samples
     return ((pred_time - fecg_time) ** 2 * mask).sum() / n
 
 

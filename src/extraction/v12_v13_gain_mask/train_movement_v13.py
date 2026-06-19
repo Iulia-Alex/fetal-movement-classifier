@@ -1,13 +1,13 @@
 """
 Training script v13 — ComplexUNetV13 (soft mask + instance norm) + SignalMSE only.
 
-Fidel paper-ului (arxiv:2506.22457):
+Faithful to the paper (arxiv:2506.22457):
   - Model: ComplexUNetV13 — mask output + instance norm + Diag + RoActivation + WeightClipper
-  - Loss: SignalMSE only (MSE temporal după iSTFT) — exact ca paper-ul, fără ComplexMSE
+  - Loss: SignalMSE only (time-domain MSE after iSTFT) — exactly as the paper, without ComplexMSE
 
-Diferente fata de v9:
-  - Instance normalization în forward (adăugat față de v9)
-  - Loss: SignalMSE only (v9 folosea SignalMSE + ComplexMSE — ComplexMSE suprima amplitudinile)
+Differences from v9:
+  - Instance normalization in forward (added vs v9)
+  - Loss: SignalMSE only (v9 used SignalMSE + ComplexMSE — ComplexMSE suppressed the amplitudes)
 """
 
 import os, sys, json, time, datetime

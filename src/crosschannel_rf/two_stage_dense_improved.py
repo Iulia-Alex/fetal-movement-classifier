@@ -1,13 +1,13 @@
 """
-DELIVERABLE v3 — two-stage dens cu Etapa 1 imbunatatita:
-  - fereastra de DETECTIE mai scurta (WIN1, default 10s, pas 1s): 16s dilua miscarile
-    scurte (o faza de 20s e majoritar no-move in ferestrele care o ating);
-  - PRAG de miscare calibrat pe fold-urile de TRAIN (maximizeaza binary-F1 per-sample
-    pe train), aplicat pe test — fara leakage.
-  - Etapa 2 (tip pe regiunea detectata intreaga) neschimbata.
+DELIVERABLE v3 — dense two-stage with an improved Stage 1:
+  - shorter DETECTION window (WIN1, default 10s, step 1s): 16s diluted the short
+    movements (a 20s phase is mostly no-move in the windows that touch it);
+  - movement THRESHOLD calibrated on the TRAIN folds (maximises per-sample binary-F1
+    on train), applied on test — no leakage.
+  - Stage 2 (type over the whole detected region) unchanged.
 
-Restul (features cross-canal, RF pe extras, CV 5-fold file-level) identic cu
-two_stage_dense.py.
+The rest (cross-channel features, RF on extracted, 5-fold file-level CV) is identical
+to two_stage_dense.py.
 """
 import os, sys, time, json
 import numpy as np

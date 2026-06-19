@@ -1,16 +1,16 @@
 """
-METRICI BINARE (miscare da/nu) pentru adapterul latent, langa macro-F1 multiclasa.
-M15 e multiclasa -> binar = (argmax > 0). Comparabil cu cifra '0.91' a lui Edward
-(care e ACURATETE binara pe cel mai bun canal).
+BINARY METRICS (movement yes/no) for the latent adapter, alongside the multiclass macro-F1.
+M15 is multiclass -> binary = (argmax > 0). Comparable to Edward's '0.91' figure
+(which is binary ACCURACY on the best channel).
 
-Doua seturi:
-  HELD-OUT (9, Final_Test_DB_npy) — setul riguros disjunct folosit la antrenare adapter
-  TEST_DB  (11, Sem1..Sem11)      — set complet disjunct (generalizare)
+Two sets:
+  HELD-OUT (9, Final_Test_DB_npy) — the strictly disjoint set used for adapter training
+  TEST_DB  (11, Sem1..Sem11)      — a fully disjoint set (generalization)
 
-Per semnal, per canal, stride 3840: GT / base(v1) / latent. Raporteaza:
-  multiclasa: acc, macro-F1   |   binar: acc, F1
-agregare: medie pe 6 canale SI cel mai bun canal (dupa F1 binar GT).
-Cache predictii in .npz (re-run instant). xlsx 'Adapter binar' + json.
+Per signal, per channel, stride 3840: GT / base(v1) / latent. Reports:
+  multiclass: acc, macro-F1   |   binary: acc, F1
+aggregation: mean over 6 channels AND the best channel (by GT binary F1).
+Caches predictions in .npz (instant re-run). xlsx 'Adapter binar' + json.
 """
 import sys, os, glob, time, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -71,7 +71,7 @@ def metrics(mc, pred6):
 
 def aggregate(stem, mc, gt, base, lat):
     M = {k: metrics(mc, v) for k, v in (('gt', gt), ('base', base), ('lat', lat))}
-    bestch = int(np.argmax(M['gt'][:, 3]))   # canal cu cel mai bun F1 binar GT
+    bestch = int(np.argmax(M['gt'][:, 3]))   # channel with the best GT binary F1
     out = {'name': stem, 'best_ch': bestch}
     cols = ['mc_acc', 'mc_f1m', 'bin_acc', 'bin_f1']
     for k in ('gt', 'base', 'lat'):
@@ -125,9 +125,9 @@ def write_xlsx(allrows):
     ws = wb.create_sheet(SH)
     bold = Font(bold=True); ital = Font(italic=True, size=9); ctr = Alignment(horizontal='center')
     thin = Side(style='thin', color='BBBBBB'); bd = Border(left=thin, right=thin, top=thin, bottom=thin)
-    L = [('ADAPTER LATENT — metrici BINARE (miscare da/nu, M15: clasa>0) langa macro-F1 multiclasa', bold),
-         ('Comparatie cu cifra "0.91" a lui Edward = ACC binar pe CEL MAI BUN canal. Aici: medie-6-canale SI best-channel.', ital),
-         ('GT=M15 pe fECG curat (plafon); base=M15 pe extras v1; latent=M15+adapter latent. HELD-OUT=9 disjuncte; TEST_DB=Sem1-11.', ital),
+    L = [('LATENT ADAPTER — BINARY metrics (movement yes/no, M15: class>0) alongside the multiclass macro-F1', bold),
+         ('Comparison with Edward\'s "0.91" figure = binary ACC on the BEST channel. Here: mean-over-6-channels AND best-channel.', ital),
+         ('GT=M15 on clean fECG (ceiling); base=M15 on extracted v1; latent=M15+latent adapter. HELD-OUT=9 disjoint; TEST_DB=Sem1-11.', ital),
          ('', None)]
     r = 1
     for txt, f in L:
@@ -135,7 +135,7 @@ def write_xlsx(allrows):
         if f:
             cc.font = f
         r += 1
-    hdr = ['Set', 'Semnal', 'mF1 GT', 'mF1 base', 'mF1 lat', 'binF1 GT', 'binF1 base', 'binF1 lat',
+    hdr = ['Set', 'Signal', 'mF1 GT', 'mF1 base', 'mF1 lat', 'binF1 GT', 'binF1 base', 'binF1 lat',
            'binACC GT (best)', 'binACC base (best)', 'binACC lat (best)']
     keys = [('gt_mc_f1m_mean',), ('base_mc_f1m_mean',), ('lat_mc_f1m_mean',),
             ('gt_bin_f1_mean',), ('base_bin_f1_mean',), ('lat_bin_f1_mean',),
@@ -165,12 +165,12 @@ def write_xlsx(allrows):
     for col in 'CDEFGHIJK':
         ws.column_dimensions[col].width = 13
     wb.save(XLSX)
-    print(f'\nfila "{SH}" scrisa in {XLSX}', flush=True)
+    print(f'\nsheet "{SH}" written to {XLSX}', flush=True)
 
 
 def main():
     global V1, NET, ADP
-    print(f'Incarc v1 + M15 + adapter latent...', flush=True)
+    print(f'Loading v1 + M15 + latent adapter...', flush=True)
     V1 = R.load_extractor('v1'); NET = E.load_model(15)
     ADP = LatentAdapter(); ADP.load_state_dict(torch.load(CKPT, map_location='cpu')); ADP.eval()
     t0 = time.time()

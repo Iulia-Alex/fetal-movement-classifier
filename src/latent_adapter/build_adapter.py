@@ -1,11 +1,11 @@
 """
-ADAPTER la nivel de bataie (POC) intre extractia v1 si clasificatorul M15 (inghetat).
-Corecteaza secventa de amplitudini R-peak a semnalului extras spre forma GT,
-re-injecteaza ca gain in semnal, apoi ruleaza M15 pe semnalul corectat.
+BEAT-LEVEL ADAPTER (POC) between the v1 extraction and the (frozen) M15 classifier.
+Corrects the R-peak amplitude sequence of the extracted signal toward the GT form,
+re-injects it as gain in the signal, then runs M15 on the corrected signal.
 
-Eval fara leakage: train pe semnale disjuncte de eval. Plafonul GT si varianta
-necorectata (v1) se citesc din GT.json/v1.json (jobul mare); calculam doar M15
-corectat. Plus eval la nivel de envelope (corelatie per-clasa + varianta no-move).
+Leakage-free eval: train on signals disjoint from eval. The GT ceiling and the uncorrected
+variant (v1) are read from GT.json/v1.json (the big job); only the corrected M15 is computed
+here. Plus an envelope-level eval (per-class correlation + no-move variance).
 """
 import sys, os, json, re, time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -220,7 +220,7 @@ def write_xlsx(rows, ec, nm_std):
     ws.column_dimensions['A'].width = 16
     for col in 'BCDEF': ws.column_dimensions[col].width = 14
     wb.save(XLSX)
-    print(f'\nfila "{SH}" scrisa in {XLSX}')
+    print(f'\nsheet "{SH}" written to {XLSX}')
 
 
 if __name__ == '__main__':

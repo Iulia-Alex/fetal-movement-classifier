@@ -29,7 +29,7 @@ WIN = E.WIN
 FT_CKPT = os.path.join(RES, 'clf_finetuned_extracted_binary.pt')   # iteration 2 (ep10)
 CKPT = os.path.join(RES, 'fusion_head_binary.pt')
 OUT = os.path.join(RES, 'fuse_channels_binary.json')
-N_CAP = int(os.environ.get('N_CAP', '200000'))   # cap lungime/semnal la build (eval = full)
+N_CAP = int(os.environ.get('N_CAP', '200000'))   # cap length/signal at build (eval = full)
 
 
 def load_ft():
@@ -50,7 +50,7 @@ class FusionHead(nn.Module):
             nn.Conv1d(6, h, 15, padding=7), nn.GroupNorm(4, h), nn.ReLU(),
             nn.Conv1d(h, 1, 1))
 
-    def forward(self, p):                      # p: (B,6,L) probabilitati -> (B,L) logit
+    def forward(self, p):                      # p: (B,6,L) probabilities -> (B,L) logit
         return self.net(p).squeeze(1)
 
 
@@ -66,7 +66,7 @@ def build_cache(names, net_ft, n_windows, seed=0):
         N = min(ext.shape[1], len(mb))
         if N_CAP:
             N = min(N, N_CAP)
-        probs = ch_probs(net_ft, ext, N)                     # (6,N) fluxuri ft pe extras
+        probs = ch_probs(net_ft, ext, N)                     # (6,N) ft streams on extracted
         max_start = N - WIN
         for s0 in rng.integers(0, max_start, size=per_sig):
             P.append(probs[:, s0:s0 + WIN].astype(np.float16))
@@ -106,8 +106,8 @@ def fused_learned(head, probs6):
 
 def eval_signal(net_ft, net_base, head, fecg, ext, mb):
     N = min(fecg.shape[1], ext.shape[1], len(mb)); mb = mb[:N]
-    pe = ch_probs(net_ft, ext, N)                 # ft pe extras, 6 canale
-    pc = ch_probs(net_base, fecg, N)              # clasificator curat pe curat, 6 canale (plafon)
+    pe = ch_probs(net_ft, ext, N)                 # ft on extracted, 6 channels
+    pc = ch_probs(net_base, fecg, N)              # clean classifier on clean, 6 channels (ceiling)
     out = {
         'ft_perchan': [np.mean([ap(mb, pe[c]) for c in range(6)]),
                        np.mean([best_f1(mb, pe[c]) for c in range(6)])],

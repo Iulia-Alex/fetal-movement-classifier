@@ -1,16 +1,16 @@
 """
-ADAPTER LATENT MULTICLASA (4 clase de miscare) — varianta scalata pe date, paralela
-cu latent_adapter_binary.py. Acelasi principiu ca latent_adapter.py (corectie la
-bottleneck-ul clasificatorului M15, LABEL-ONLY, prin decoderul INGHETAT) DAR:
-  - antrenat pe 113 semnale (Final_Test_DB 122 minus cele 9 held-out), nu pe DB_1;
-  - extractiile DEJA in cache (inferred_{VARIANT}/) — fara re-inferenta;
-  - parametrizat pe varianta de extractie: v1 (Baseline) sau v17 (Attention-supervised).
+MULTICLASS LATENT ADAPTER (4 movement classes) — the data-scaled variant, parallel to
+latent_adapter_binary.py. Same principle as latent_adapter.py (correction at the M15
+classifier bottleneck, LABEL-ONLY, through the FROZEN decoder) BUT:
+  - trained on 113 signals (Final_Test_DB 122 minus the 9 held-out), not on DB_1;
+  - extractions ALREADY cached (inferred_{VARIANT}/) — no re-inference;
+  - parametrized on the extraction variant: v1 (Baseline) or v17 (Attention-supervised).
 
-Loss = CrossEntropy (ponderi de clasa inv-freq temperate, contra dominantei no-move)
-prin DECODER-UL INGHETAT vs masca categoriala (0..3). Nu se foloseste semnal GT nicaieri.
+Loss = CrossEntropy (tempered inv-freq class weights, against no-move dominance)
+through the FROZEN DECODER vs the categorical mask (0..3). No GT signal is used anywhere.
 
-Eval pe DOUA seturi disjuncte de train: held-out (9) + Test_DB Sem1..Sem11.
-Raporteaza acc + macro-F1 (+ F1 per-clasa) pt gt(M15 curat)/base(M15 extras)/lat(M15+A).
+Eval on TWO disjoint-from-train sets: held-out (9) + Test_DB Sem1..Sem11.
+Reports acc + macro-F1 (+ per-class F1) for gt(M15 clean)/base(M15 extracted)/lat(M15+A).
 Probe: `python3 latent_adapter_multiclass.py probe [v17]`.
 """
 import sys, os, time, json
@@ -48,8 +48,8 @@ def build_cache(names, net, n_windows, seed=0):
     B, S, Y = [], [[], [], [], []], []
     t0 = time.time()
     for fi, nm in enumerate(names):
-        ext = np.load(os.path.join(INFERRED, nm + '.npy'))          # extras (cache)
-        mc = load_mask('mc_masks', nm).astype(int)                  # categorial 0..3
+        ext = np.load(os.path.join(INFERRED, nm + '.npy'))          # extracted (cache)
+        mc = load_mask('mc_masks', nm).astype(int)                  # categorical 0..3
         N = min(ext.shape[1], len(mc)); max_start = N - WIN
         for ch in range(6):
             starts = rng.integers(0, max_start, size=per_ch)
@@ -181,7 +181,7 @@ def main():
             v = np.mean([r[k] for r in sub], axis=0)
             print(f'  {label:<9} {k:<5} acc={v[0]:.3f} mF1={v[1]:.3f} '
                   f'| perclasa {np.round(v[2:], 3).tolist()}', flush=True)
-    print(f'\nGata ({(time.time()-t)/60:.1f}min). json: {OUT}', flush=True)
+    print(f'\nDone ({(time.time()-t)/60:.1f}min). json: {OUT}', flush=True)
 
 
 if __name__ == '__main__':

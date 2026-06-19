@@ -1,15 +1,15 @@
 """
-ComplexUNet v9 — v7 architecture + soft mask output (ca v1).
+ComplexUNet v9 — v7 architecture + soft mask output (like v1).
 
-Diferenta fata de v7:
-  - forward() salveaza input-ul de intrare (mixture_spec)
-  - Output-ul retelei = sigmoid(real) + j*sigmoid(imag)  → maska ∈ [0,1]
-  - fECG_pred = mask ⊙ mixture_spec  (nu predictie directa)
+Difference from v7:
+  - forward() stores the input (mixture_spec)
+  - Network output = sigmoid(real) + j*sigmoid(imag)  → mask ∈ [0,1]
+  - fECG_pred = mask ⊙ mixture_spec  (not direct prediction)
 
-De ce e mai bun:
-  - Reteaua nu "inventeaza" fECG, invata CE SA PASTREZE din amestec
-  - Amplitudinile R-peak fetale sunt deja in mixture_spec
-  - Optim mult mai usor: mask → 1 pe bin-urile fetale, → 0 pe cele materne
+Why it is better:
+  - The network does not "invent" fECG, it learns WHAT TO KEEP from the mixture
+  - The fetal R-peak amplitudes are already in mixture_spec
+  - Much easier to optimize: mask → 1 on the fetal bins, → 0 on the maternal ones
 """
 
 import torch

@@ -1,8 +1,8 @@
 """
-Adapter v1 antrenat pe DB_1 (baza de TRAIN, .mat) — varianta corecta fata de POC
-(care antrena pe split din test). GT folosit DOAR la antrenare pe DB_1; la eval
-(cele 9 semnale held-out din Final_Test_DB) adapterul NU vede GT.
-Acelasi mecanism: regresie amplitudine-bataie extras->GT, re-injectie ca gain, M15.
+v1 adapter trained on DB_1 (the TRAIN base, .mat) — the correct variant compared to the POC
+(which trained on a split of the test set). GT used ONLY at training on DB_1; at eval
+(the 9 held-out signals from Final_Test_DB) the adapter does NOT see GT.
+Same mechanism: beat-amplitude regression extracted->GT, re-injection as gain, M15.
 """
 import sys, os, json, glob, time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -62,7 +62,7 @@ def eval_heldout(adapter, model, clf15):
     by = {'easy': [], 'medium': [], 'difficult': []}
     for s in sigs:
         if s in v1done: by[snr_cat(s)].append(s)
-    eval_sigs = [by[c][i] for c in by for i in range(3)]   # acelasi set ca POC
+    eval_sigs = [by[c][i] for c in by for i in range(3)]   # same set as the POC
     gt_json = json.load(open(os.path.join(EVAL_DIR, 'GT.json')))
     v1_json = json.load(open(os.path.join(EVAL_DIR, 'v1.json')))
     rows = []
@@ -90,10 +90,10 @@ def main():
     mats = sorted(glob.glob(os.path.join(DB1_LONG, '*.mat')))
     step = max(1, len(mats) // N_TRAIN_MAT)
     train_mats = mats[::step][:N_TRAIN_MAT]
-    print(f'Train pe {len(train_mats)} .mat din DB_1 (Long). Construiesc perechi...', flush=True)
+    print(f'Train on {len(train_mats)} .mat from DB_1 (Long). Building pairs...', flush=True)
     t = time.time()
     X, Y = build_pairs(train_mats, model)
-    print(f'  perechi: {len(X)} ({(time.time()-t)/60:.0f}min)', flush=True)
+    print(f'  pairs: {len(X)} ({(time.time()-t)/60:.0f}min)', flush=True)
     adapter = train(X, Y)
     print('  adapter trained.', flush=True)
 
@@ -101,7 +101,7 @@ def main():
     rows = eval_heldout(adapter, model, clf15)
     g = np.mean([r[2] for r in rows]); v = np.mean([r[3] for r in rows]); c = np.mean([r[4] for r in rows])
     print(f'\n=== DOWNSTREAM M15 (DB_1-trained, 9 held-out) ===')
-    print(f'  GT={g:.3f}  v1(necor)={v:.3f}  v1+adapter(DB1)={c:.3f}  | delta={c-v:+.3f}')
+    print(f'  GT={g:.3f}  v1(uncor)={v:.3f}  v1+adapter(DB1)={c:.3f}  | delta={c-v:+.3f}')
     print(f'  (POC, trained on test split: v1+adapter=0.485, delta=+0.123)')
     json.dump({'rows': rows, 'mean': {'GT': g, 'v1': v, 'v1_adapter_db1': c}}, open(OUT, 'w'), indent=2)
     write_xlsx(rows)
@@ -115,15 +115,15 @@ def write_xlsx(rows):
     ws = wb.create_sheet(SH)
     bold = Font(bold=True); ital = Font(italic=True, size=9); ctr = Alignment(horizontal='center')
     thin = Side(style='thin', color='BBBBBB'); bd = Border(left=thin, right=thin, top=thin, bottom=thin)
-    L = [('ADAPTER v1 -> M15, antrenat pe DB_1 (baza de TRAIN), eval pe 9 semnale held-out din test', bold),
-         ('GT folosit DOAR la antrenare pe DB_1; la eval adapterul vede doar semnalul extras (fara GT) -> corect metodologic.', ital),
-         ('GT/v1 citite din jobul mare; v1+adapter(DB1) calculat aici. Acc multiclass 4 clase, medie pe 6 canale.', ital), ('', None)]
+    L = [('v1 ADAPTER -> M15, trained on DB_1 (the TRAIN base), eval on 9 held-out signals from test', bold),
+         ('GT used ONLY at training on DB_1; at eval the adapter sees only the extracted signal (no GT) -> methodologically correct.', ital),
+         ('GT/v1 read from the big job; v1+adapter(DB1) computed here. Multiclass acc, 4 classes, mean over 6 channels.', ital), ('', None)]
     r = 1
     for txt, f in L:
         cc = ws.cell(r, 1, txt)
         if f: cc.font = f
         r += 1
-    for j, h in enumerate(['Semnal', 'Categorie', 'GT (plafon)', 'v1 (necor)', 'v1+adapter(DB1)', 'delta']):
+    for j, h in enumerate(['Signal', 'Category', 'GT (ceiling)', 'v1 (uncor)', 'v1+adapter(DB1)', 'delta']):
         cc = ws.cell(r, 1+j, h); cc.font = bold; cc.alignment = ctr; cc.fill = PatternFill('solid', fgColor='E2EFDA'); cc.border = bd
     r += 1
     for nm, cat, g, v, c in rows:
@@ -132,13 +132,13 @@ def write_xlsx(rows):
             if j >= 2: cc.alignment = ctr
         r += 1
     gm = np.mean([x[2] for x in rows]); vm = np.mean([x[3] for x in rows]); cm = np.mean([x[4] for x in rows])
-    for j, val in enumerate(['MEDIE', '', round(gm, 3), round(vm, 3), round(cm, 3), round(cm-vm, 3)]):
+    for j, val in enumerate(['MEAN', '', round(gm, 3), round(vm, 3), round(cm, 3), round(cm-vm, 3)]):
         cc = ws.cell(r, 1+j, val); cc.font = bold; cc.border = bd
         if j >= 2: cc.alignment = ctr
     ws.column_dimensions['A'].width = 16
     for col in 'BCDEF': ws.column_dimensions[col].width = 15
     wb.save(XLSX)
-    print(f'\nfila "{SH}" scrisa in {XLSX}')
+    print(f'\nsheet "{SH}" written to {XLSX}')
 
 
 if __name__ == '__main__':

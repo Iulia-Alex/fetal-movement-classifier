@@ -1,16 +1,16 @@
 """
-ComplexUNet v10 — arhitectura v1 (0.59M) + soft mask output.
+ComplexUNet v10 — v1 architecture (0.59M) + soft mask output.
 
-Diferente fata de v9 (1.87M, RoActivation, concat skip):
-  - Shared conv weights pentru Re si Im (sameW=True) → mai putini parametri
-  - LeakyReLU(0.2) in loc de RoActivation → mai simplu, converge mai usor
-  - Skip connections via ADUNARE (nu concatenare) → input decoder = aceeasi dimensiune
-  - Diag: scalare magnitudine exp(β) (nu rotatie faza)
-  - ~0.59M parametri
+Differences from v9 (1.87M, RoActivation, concat skip):
+  - Shared conv weights for Re and Im (sameW=True) → fewer parameters
+  - LeakyReLU(0.2) instead of RoActivation → simpler, converges more easily
+  - Skip connections via ADDITION (not concatenation) → decoder input = same dimension
+  - Diag: magnitude scaling exp(β) (not phase rotation)
+  - ~0.59M parameters
 
-De ce pornim de la v1:
-  v1 era deja bun vizual. v10 pastreaza exact arhitectura lui v1 dar adauga
-  peak loss la pozitiile fqrs din training script.
+Why we start from v1:
+  v1 was already good visually. v10 keeps exactly v1's architecture but adds
+  peak loss at the fqrs positions in the training script.
 """
 
 import torch
@@ -20,7 +20,7 @@ import torch.nn.functional as F
 
 # ---------------------------------------------------------------------------
 class ComplexLeakyReLU(nn.Module):
-    """LeakyReLU(0.2) aplicat independent pe Re si Im."""
+    """LeakyReLU(0.2) applied independently on Re and Im."""
     def __init__(self):
         super().__init__()
         self.act = nn.LeakyReLU(0.2, inplace=False)
@@ -31,8 +31,8 @@ class ComplexLeakyReLU(nn.Module):
 
 class ComplexConvLayer(nn.Module):
     """
-    Convolutie complexa cu pesi SHARED pentru Re si Im (sameW=True din v1).
-    Acelasi Conv2d aplicat pe Re(x) si Im(x) separat.
+    Complex convolution with SHARED weights for Re and Im (sameW=True from v1).
+    The same Conv2d applied to Re(x) and Im(x) separately.
     """
     def __init__(self, in_ch, out_ch, kernel_size=3, stride=1, padding=1):
         super().__init__()

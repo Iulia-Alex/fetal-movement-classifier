@@ -1,14 +1,14 @@
 """
-DIAGNOSTIC "information ceiling": supravietuieste modulatia de amplitudine
-(semnatura miscarii) extractiei v1?
+DIAGNOSTIC "information ceiling": does the amplitude modulation (the movement
+signature) survive the v1 extraction?
 
-Pentru un esantion de semnale: detecteaza R-peaks pe GT, citeste amplitudinea
-QRS (max-abs intr-o fereastra mica) la ACELEASI pozitii in GT si in extrasul v1,
-si masoara corelatia Pearson dintre cele doua secvente de amplitudini de bataie:
-  - global (toate batatile)
-  - per CLASA de miscare (linear/spline/helix), in interiorul segmentelor
-    (= e pastrata FORMA pe care o citeste clasificatorul?)
-Decizie: r mare -> adapter promitator; r ~ 0 -> info pierduta, adapterul nu ajuta.
+For a sample of signals: detect R-peaks on GT, read the QRS amplitude (max-abs in a
+small window) at the SAME positions in GT and in the v1 extraction, and measure the
+Pearson correlation between the two beat-amplitude sequences:
+  - global (all beats)
+  - per movement CLASS (linear/spline/helix), within the segments
+    (= is the SHAPE that the classifier reads preserved?)
+Decision: high r -> promising adapter; r ~ 0 -> information lost, the adapter won't help.
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -51,12 +51,12 @@ def amp_at(sig, peaks, w=12):
 
 def main():
     signals = sorted(os.listdir(os.path.join(NPY, 'mixture')))
-    sample = signals[::7]   # ~18 semnale, span peste conditii SNR
+    sample = signals[::7]   # ~18 signals, spanning SNR conditions
     print(f'Diagnostic on {len(sample)} signals (v1 extracted vs GT)\n', flush=True)
     ext_model = R.load_extractor('v1')
 
-    glob_r = []                              # r global per (semnal,canal)
-    seg_r = {c: [] for c in (0, 1, 2, 3)}    # r per segment, per clasa
+    glob_r = []                              # global r per (signal, channel)
+    seg_r = {c: [] for c in (0, 1, 2, 3)}    # r per segment, per class
     seg_w = {c: [] for c in (0, 1, 2, 3)}    # lengths (beat count)
 
     for si, name in enumerate(sample):
@@ -99,8 +99,8 @@ def main():
         r = np.array(seg_r[c]); w = np.array(seg_w[c])
         wr = np.nansum(r * w) / np.nansum(w[~np.isnan(r)]) if np.any(~np.isnan(r)) else float('nan')
         print(f'  {CLASS_NAME[c]:<10}{np.nanmean(r):>9.3f}{wr:>12.3f}{len(r):>7}{int(w.sum()):>8}')
-    print('\nInterpretare: r>~0.5 = info se pastreaza, adapter promitator | '
-          'r~0.2-0.4 = slab | r~0 = pierduta (adapterul nu ajuta).')
+    print('\nInterpretation: r>~0.5 = info preserved, promising adapter | '
+          'r~0.2-0.4 = weak | r~0 = lost (the adapter does not help).')
 
 
 if __name__ == '__main__':

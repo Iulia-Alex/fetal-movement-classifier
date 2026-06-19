@@ -19,7 +19,7 @@ CFG = {14:dict(cin=5,cout=1,self_attn=False,binary=True, feat='5pw'),
        15:dict(cin=5,cout=4,self_attn=False,binary=False,feat='5pw'),
        18:dict(cin=3,cout=1,self_attn=True, binary=True, feat='3sl')}
 
-# ── arhitectura ──────────────────────────────────────────────────────────────
+# ── architecture ──────────────────────────────────────────────────────────────
 class ResBlock(nn.Module):
     def __init__(self, cin, cout):
         super().__init__()

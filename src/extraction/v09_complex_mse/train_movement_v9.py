@@ -1,13 +1,13 @@
 """
 Training script v9 — ComplexUNetV9 (soft mask) + ComposedLoss (SignalMSE + ComplexMSE).
 
-Diferente fata de v8:
-  - Model: ComplexUNetV9 (soft mask output in loc de predictie directa)
-  - Loss: signal_mse (time-domain) + complex_mse (spectral) — ca v1
+Differences from v8:
+  - Model: ComplexUNetV9 (soft mask output instead of direct prediction)
+  - Loss: signal_mse (time-domain) + complex_mse (spectral) — like v1
 
-Motivatie:
-  v1 era bun tocmai pentru ca folosea masca + loss dual.
-  v8 (predictie directa + SignalMSE only) nu reconstruieste bine.
+Motivation:
+  v1 was good precisely because it used the mask + dual loss.
+  v8 (direct prediction + SignalMSE only) does not reconstruct well.
 """
 
 import os, sys, json, time, datetime

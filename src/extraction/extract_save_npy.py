@@ -1,8 +1,8 @@
 """
-Extrage v1 si v17 pe toate cele 122 semnale Test_DB (toate 6 canalele) si
-salveaza cate un .npy per semnal, forma (6, N), in doua foldere separate:
-  inferred_v1/<semnal>.npy   si   inferred_v17/<semnal>.npy
-Resumabil (sare peste ce exista). Paralel moderat (nu sufoca jobul mare).
+Extract v1 and v17 over all 122 Test_DB signals (all 6 channels) and
+save one .npy per signal, shape (6, N), into two separate folders:
+  inferred_v1/<signal>.npy   and   inferred_v17/<signal>.npy
+Resumable (skips what already exists). Moderate parallelism (does not choke the big job).
 """
 import sys, os, time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))

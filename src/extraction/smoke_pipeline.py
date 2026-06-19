@@ -1,8 +1,8 @@
 """
-Smoke test inainte de jobul mare:
-  - incarca FIECARE model de extractie (poarta: load OK?)
-  - extrage 1 semnal -> F1 R-peak vs GT (poarta: extractie sane?)
-  - clasifica 6 canale x 3 clf (cronometrare ciclu complet -> proiectie wall-time)
+Smoke test before the big job:
+  - load EACH extraction model (gate: load OK?)
+  - extract 1 signal -> R-peak F1 vs GT (gate: extraction sane?)
+  - classify 6 channels x 3 clf (timing a full cycle -> wall-time projection)
 """
 import sys, os, time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))

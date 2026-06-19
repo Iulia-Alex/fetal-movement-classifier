@@ -1,11 +1,11 @@
 """
-Calcul F1 score QRS — versiunea 3 cu Pan-Tompkins adaptat pentru fECG.
+QRS F1 score — version 3 with Pan-Tompkins adapted for fECG.
 
-Diferente fata de v2:
-  - Detector Pan-Tompkins in loc de find_peaks simplu.
-  - Squaring elimina problema QRS bifazic (ch1/ch2 aveau 2 peaks/bataie).
-  - Pipeline: bandpass → derivata → patrat → integrare fereastra glisanta → find_peaks.
-  - Fereastra de integrare 80ms (adaptata pentru fECG, nu 150ms ca la adult).
+Differences from v2:
+  - Pan-Tompkins detector instead of plain find_peaks.
+  - Squaring removes the biphasic-QRS problem (ch1/ch2 had 2 peaks/beat).
+  - Pipeline: bandpass → derivative → square → sliding-window integration → find_peaks.
+  - Integration window 80ms (adapted for fECG, not 150ms as for adults).
 """
 
 import sys, os, json, re, time
@@ -51,9 +51,9 @@ ORIG_T_1k = 1 + WINDOW_1k // HOP1k
 TOLERANCE_MS = 50
 MIN_DIST_MS  = 250
 # Pan-Tompkins parameters adapted for fECG
-PT_BP_LOW    = 5     # Hz  (bandpass inainte de derivata)
+PT_BP_LOW    = 5     # Hz  (bandpass before the derivative)
 PT_BP_HIGH   = 40    # Hz
-PT_INT_MS    = 80    # ms  fereastra integrare (adult=150ms, fetal=80ms)
+PT_INT_MS    = 80    # ms  integration window (adult=150ms, fetal=80ms)
 PT_THRESH    = 0.15  # fraction of local peak maximum for threshold
 
 PATTERN = re.compile(r'SNRmn=([-\d]+)dB_SNRfm=([-\d]+)dB_SNRfn=([-\d]+)dB')
@@ -165,8 +165,8 @@ _DERIV_KERNEL = np.array([-1, -2, 0, 2, 1], dtype=np.float64) / 8
 
 def pan_tompkins(sig, fs=FS_REAL):
     """
-    Pan-Tompkins adaptat pentru fECG.
-    Returneaza indicii sample-urilor unde sunt R-peaks.
+    Pan-Tompkins adapted for fECG.
+    Returns the indices of the samples where the R-peaks are.
     """
     sig = sig.astype(np.float64)
 

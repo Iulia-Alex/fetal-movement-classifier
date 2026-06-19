@@ -1,8 +1,8 @@
 """
-MovementECGDatasetV12 — ca V10 dar cu DILATION=100 pentru QRSwideMSE.
+MovementECGDatasetV12 — like V10 but with DILATION=100 for QRSwideMSE.
 
-Dilatare ±100 samples (±100ms la 1kHz) acopera complexul PQRS complet,
-inclusiv undele Q si S laterale (nu doar R-peak-ul ±30ms).
+Dilation ±100 samples (±100ms at 1kHz) covers the full PQRS complex,
+including the lateral Q and S waves (not just the R-peak ±30ms).
 """
 
 import os
@@ -23,7 +23,7 @@ DILATION = 100   # ±100ms — acopera Q, R, S (vs ±30ms in v10)
 
 class MovementECGDatasetV12(MovementECGDatasetV10):
     """
-    Ca MovementECGDatasetV10 dar cu peak_mask dilata la ±100 samples.
+    Like MovementECGDatasetV10 but with peak_mask dilated to ±100 samples.
 
     Returns: (x, y, fecg_time, peak_mask)  — identic cu V10 ca forma
     """

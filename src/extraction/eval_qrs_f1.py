@@ -1,16 +1,16 @@
 """
-Calcul F1 score pentru detectia R-peaks QRS pe Final_Test_DB.
+QRS R-peak detection F1 score on Final_Test_DB.
 
-Metoda:
-  1. Detectam R-peaks in fECG-ul prezis si in GT folosind find_peaks.
-  2. Doua peaks se "potrivesc" daca sunt la distanta <= TOLERANCE_MS.
+Method:
+  1. Detect R-peaks in the predicted fECG and in GT using find_peaks.
+  2. Two peaks "match" if they are within <= TOLERANCE_MS of each other.
   3. F1 = 2*TP / (2*TP + FP + FN)
 
-Parametri QRS detection:
-  - Bandpass: 3-40 Hz (izolam QRS fetal)
-  - Min distanta intre peaks: 250ms (max ~240 bpm)
-  - Toleranta matching: 50ms (standard in literatura fECG)
-  - Polaritate: detectam peaks pozitive si negative, folosim setul mai mare
+QRS detection parameters:
+  - Bandpass: 3-40 Hz (isolates the fetal QRS)
+  - Min distance between peaks: 250ms (max ~240 bpm)
+  - Matching tolerance: 50ms (standard in the fECG literature)
+  - Polarity: detect positive and negative peaks, use the larger set
 """
 
 import sys, os, json, re, time
@@ -46,8 +46,8 @@ DIM_500   = 128 * 128
 ORIG_F_1k = NFFT1k // 2 + 1
 ORIG_T_1k = 1 + WINDOW_1k // HOP1k
 
-TOLERANCE_MS  = 50    # ms fereastra matching peaks
-MIN_DIST_MS   = 250   # ms distanta minima intre peaks (max 240 bpm)
+TOLERANCE_MS  = 50    # ms peak-matching window
+MIN_DIST_MS   = 250   # ms min distance between peaks (max 240 bpm)
 BANDPASS_LOW  = 3     # Hz
 BANDPASS_HIGH = 40    # Hz
 

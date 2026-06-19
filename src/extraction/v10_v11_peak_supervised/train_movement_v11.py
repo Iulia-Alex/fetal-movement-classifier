@@ -3,14 +3,14 @@ Training script v11 — ComplexUNetV11 (v9 arch, 1.87M) + direct prediction.
 
 Loss = SignalMSE + ALPHA * PeakMSE(fqrs)
 
-Fara ComplexMSE (cauza principala de suprimare a amplitudinilor in v9).
-Fara soft mask (direct prediction ca v1/v8 — modelul poate prezice orice amplitudine).
+No ComplexMSE (the main cause of amplitude suppression in v9).
+No soft mask (direct prediction like v1/v8 — the model can predict any amplitude).
 
-Motivatie:
-  v1 (direct + SignalMSE) → amplitudini ~90-95% GT, arhitectura slaba (0.59M)
-  v9 (mask + Sig+Cpl)    → amplitudini suprimate, ComplexMSE interfereaza
-  v11 = arhitectura v9 (1.87M) + obiectiv simplu (SignalMSE + PeakMSE)
-       → sanse bune de amplitudini corecte cu capacitate mai mare
+Motivation:
+  v1 (direct + SignalMSE) → amplitudes ~90-95% GT, weak architecture (0.59M)
+  v9 (mask + Sig+Cpl)    → suppressed amplitudes, ComplexMSE interferes
+  v11 = v9 architecture (1.87M) + simple objective (SignalMSE + PeakMSE)
+       → good chance of correct amplitudes with larger capacity
 """
 
 import os, sys, json, time, datetime

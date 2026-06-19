@@ -2,14 +2,14 @@
 Training script v12 — ComplexUNetV12 (v9 arch, 1.87M) + gain mask (1.5×sigmoid).
 
 Loss = SignalMSE + ALPHA * QRSwideMSE
-  - QRSwideMSE: peak_mask ±100 samples (fata de ±30 in v11) → acopera PQRS
-  - Fara ComplexMSE (cauza principala de suprimare amplitudini in v9)
-  - Gain mask 1.5×sigmoid → poate depasi mixture magnitude la bins antifaza
+  - QRSwideMSE: peak_mask ±100 samples (vs ±30 in v11) → covers PQRS
+  - No ComplexMSE (the main cause of amplitude suppression in v9)
+  - Gain mask 1.5×sigmoid → can exceed the mixture magnitude at antiphase bins
 
-Motivatie:
-  v9  (mask 1×sig + Sig+Cpl)    → amplitudini suprimate (ComplexMSE 20× mai mare)
-  v11 (direct + Sig+Peak ±30)   → amplitudini in crestere, fara ceiling hard
-  v12 (mask 1.5×sig + Sig+Peak ±100) → recuperare energie + focus PQRS complet
+Motivation:
+  v9  (mask 1×sig + Sig+Cpl)    → suppressed amplitudes (ComplexMSE 20× larger)
+  v11 (direct + Sig+Peak ±30)   → rising amplitudes, no hard ceiling
+  v12 (mask 1.5×sig + Sig+Peak ±100) → energy recovery + full PQRS focus
 """
 
 import os, sys, json, time, datetime

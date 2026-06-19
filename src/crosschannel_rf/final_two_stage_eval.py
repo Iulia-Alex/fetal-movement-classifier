@@ -1,9 +1,9 @@
 """
-Eval FINAL two-stage (16s, varianta cea mai buna) pe EXTRAS, 5-fold file-level.
-  - metrica raportata: ACCURACY PER TIP DE MISCARE (recall pe clasa) + overall.
-  - salveaza predictiile per-sample (binar + multiclasa) pentru FIECARE fisier,
-    ca sa pot alege un semnal bun si sa-l plotez (plot_pipeline_demo.py).
-Fara oracle la inferenta: Etapa 1 detecteaza regiunile, Etapa 2 le clasifica.
+FINAL two-stage evaluation (16s, best variant) on EXTRACTED, 5-fold file-level.
+  - reported metric: ACCURACY PER MOVEMENT TYPE (per-class recall) + overall.
+  - saves the per-sample predictions (binary + multiclass) for EACH file,
+    so a good signal can be picked and plotted (plot_pipeline_demo.py).
+No oracle at inference: Stage 1 detects the regions, Stage 2 classifies them.
 """
 import os, sys, json, time
 import numpy as np

@@ -1,13 +1,13 @@
 """
-Training script v17 — ComplexAttentionUNet cu attention supervision.
+Training script v17 — ComplexAttentionUNet with attention supervision.
 
-Față de v16:
-  - Dataset: movement_dataset_v17.py (returnează att_target_T128)
+Compared to v16:
+  - Dataset: movement_dataset_v17.py (returns att_target_T128)
   - Loss: L_total = SignalMSE + λ_att * L_att
       L_att = MSE(alpha_AG1_predicted, att_target_AG1_resolution)
       alpha_AG1 capturat prin forward hook pe model.ag1.psi (sigmoid output)
       att_target: (B,128) → avg_pool →64 → broadcast la (B,1,64,64)
-  - λ_att = 0.1 (ambele componente logate separat in history)
+  - λ_att = 0.1 (both components logged separately in history)
   - Restul identic cu v16: SignalMSE, AdamW, ReduceLROnPlateau, PATIENCE=20
 
 Arhitectura: ComplexAttentionUNet din complex_network_v16.py (identic cu v16).
@@ -78,17 +78,17 @@ def signal_mse(pred_spec: torch.Tensor, fecg_time: torch.Tensor) -> torch.Tensor
 
 def att_loss(alpha_ag1: torch.Tensor, att_target_128: torch.Tensor) -> torch.Tensor:
     """
-    Calculeaza MSE intre alpha AG1 si target-ul de atentie la rezolutia 64x64.
+    Computes the MSE between alpha AG1 and the attention target at 64x64 resolution.
 
     alpha_ag1      : (B, 1, 64, 64)  — sigmoid output din AG1
-    att_target_128 : (B, 128)        — masca binara la T=128
+    att_target_128 : (B, 128)        — binary mask at T=128
     """
     B = att_target_128.shape[0]
     # Downsample mask 128 → 64 with avg_pool (preserving soft values)
     target_64 = F.avg_pool1d(
         att_target_128.unsqueeze(1), kernel_size=2, stride=2
     ).squeeze(1)   # (B, 64)
-    # Broadcast pe dimensiunea F (dim=2): (B, 1, 64, 64)
+    # Broadcast over the F dimension (dim=2): (B, 1, 64, 64)
     target_2d = target_64.unsqueeze(1).unsqueeze(2).expand(-1, 1, 64, -1)  # (B,1,64,64)
     return F.mse_loss(alpha_ag1, target_2d)
 
@@ -120,8 +120,8 @@ _current_epoch = 0
 
 def run_epoch(model, loader, optimizer, device, train=True, alphas_store=None):
     """
-    alphas_store : dict care primeste alpha_ag1 din forward hook.
-                   Hookul trebuie inregistrat inainte de apelul acestei functii.
+    alphas_store : dict that receives alpha_ag1 from the forward hook.
+                   The hook must be registered before calling this function.
     """
     model.train() if train else model.eval()
     total_loss     = 0.0

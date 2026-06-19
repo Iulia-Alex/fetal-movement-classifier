@@ -1,15 +1,15 @@
 """
-ComplexUNet v14 — arhitectura mărită (32→64→128→256, bottleneck 512) + instance norm.
+ComplexUNet v14 — enlarged architecture (32→64→128→256, bottleneck 512) + instance norm.
 
-Fidel paper-ului (arxiv:2506.22457):
-  - Capacitate mai mare: encoder 32→64→128→256, bottleneck 256→512→256
-  - Instance normalization în forward (per (B,C))
+Faithful to the paper (arxiv:2506.22457):
+  - Larger capacity: encoder 32→64→128→256, bottleneck 256→512→256
+  - Instance normalization in forward (per (B,C))
   - Soft mask output: sigmoid(logits) ⊙ x_in
-  - Diagonal layers (Diag) la input și output
-  - RoActivation în fiecare strat
+  - Diagonal layers (Diag) at input and output
+  - RoActivation in each layer
   - WeightClipper [-1, 1]
 
-Input: (B, 6, 128, 128) complex — spectrogramă 128×128 @ 500Hz
+Input: (B, 6, 128, 128) complex — 128×128 spectrogram @ 500Hz
 """
 
 import torch
@@ -126,7 +126,7 @@ class WeightClipper:
 
 class ComplexUNetV14(nn.Module):
     """
-    Arhitectura mărită: 6→32→64→128→256, bottleneck 512.
+    Enlarged architecture: 6→32→64→128→256, bottleneck 512.
     Input: (B, 6, 128, 128) complex.
     """
     def __init__(self, dimension, in_channels=6):
